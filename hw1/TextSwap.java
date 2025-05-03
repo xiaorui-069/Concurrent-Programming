@@ -43,18 +43,29 @@ public class TextSwap {
     }
 
     private static char[] runSwapper(String content, int chunkSize, int numChunks) {
-        List<Character> labels = getLabels(numChunks);
-        Interval[] intervals = getIntervals(numChunks, chunkSize);
-        // TODO: Order the intervals properly, then run the Swapper instances.
-        char[] buffer = new char[content.length()];
-        for(int i=0;i<labels.size();i++){
-            Swapper swapper = new Swapper(intervals[labels.get(i) - 'a'], content, buffer, i * chunkSize);
-            Thread thread = new Thread(swapper);
-            thread.start();
-        }
-        
-        return buffer;
+    List<Character> labels = getLabels(numChunks);
+    Interval[] intervals = getIntervals(numChunks, chunkSize);
+    char[] buffer = new char[content.length()];
+    List<Thread> threads = new ArrayList<>();
+
+    for (int i = 0; i < labels.size(); i++) {
+        Swapper swapper = new Swapper(intervals[labels.get(i) - 'a'], content, buffer, i * chunkSize);
+        Thread thread = new Thread(swapper);
+        threads.add(thread);
+        thread.start();
     }
+
+    for (Thread thread : threads) {
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            e.printStackTrace();
+        }
+    }
+
+    return buffer;
+}
 
     private static void writeToFile(String contents, int chunkSize, int numChunks) throws Exception {
         if(numChunks > 26) throw new Exception("Chunk size too small");
